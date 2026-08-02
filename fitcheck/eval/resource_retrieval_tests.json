@@ -1,0 +1,17 @@
+[
+  {"id": "T1", "gap": "no production deployment or API serving experience shown", "expect_top2": ["mlops_deployment", "api_development"]},
+  {"id": "T2", "gap": "hasn't worked with RAG or retrieval augmented generation", "expect_top2": ["rag_systems"]},
+  {"id": "T3", "gap": "SQL is weak, especially window functions and joins", "expect_top2": ["sql"]},
+  {"id": "T4", "gap": "no experience with vector databases or semantic search embeddings", "expect_top2": ["vector_embeddings"]},
+  {"id": "T5", "gap": "lacks A/B testing and controlled experimentation design skills", "expect_top2": ["ab_testing"]},
+  {"id": "T6", "gap": "no deep learning or PyTorch neural network experience shown", "expect_top2": ["deep_learning"]},
+  {"id": "T7", "gap": "hasn't demonstrated LangGraph or agentic multi-step orchestration", "expect_top2": ["agentic_ai_langgraph"]},
+  {"id": "T8", "gap": "missing containerization and Docker packaging skills", "expect_top2": ["docker_containers"]},
+  {"id": "T9", "gap": "no evidence of cloud deployment on AWS or GCP", "expect_top2": ["cloud_platforms"]},
+  {"id": "T10", "gap": "resume doesn't show data pipeline or ETL scheduling work", "expect_top2": ["data_engineering_etl"]},
+  {"id": "T11", "gap": "no computer vision or image classification experience", "expect_top2": ["computer_vision"]},
+  {"id": "T12", "gap": "hasn't shown fairness auditing or bias mitigation work", "expect_top2": ["ethical_ai_fairness"]},
+  {"id": "T13", "gap": "missing recommendation systems or personalization experience", "expect_top2": ["recommendation_systems"]},
+  {"id": "T14", "gap": "no evidence of stakeholder communication or non-technical translation", "expect_top2": ["business_communication"]},
+  {"id": "T15", "gap": "hasn't worked with model monitoring or drift detection in production", "expect_top2": ["model_monitoring"]}
+]

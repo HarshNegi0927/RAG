@@ -1,0 +1,18 @@
+[
+  {
+    "id": "weak_fit_junior_vs_senior_jd",
+    "resume_text": "Data Science student. Built a government scheme eligibility matcher using Python, BM25 retrieval, and an LLM API, with a 15-case evaluation harness (improved retrieval MRR from 0.83 to 1.0 after adding stemming). Comfortable with pandas, scikit-learn, and basic Streamlit deployment. 6 months of freelance data analysis work.",
+    "jd_text": "Looking for a Data Scientist with 3+ years production ML experience, strong SQL, deep learning (PyTorch), and experience deploying models at scale.",
+    "expect_extracted_skills_include_any": ["python", "bm25", "pandas", "scikit-learn", "streamlit"],
+    "expect_fit_score_max": 45,
+    "note": "Resume has none of the JD's core asks (years, SQL, PyTorch, scale deployment) -- should score low and show real 'missing' requirements, not be talked up."
+  },
+  {
+    "id": "strong_fit_matching_jd",
+    "resume_text": "Senior Data Scientist with 4 years of production ML experience. Built and deployed classification models to production using PyTorch and deep learning architectures. Strong SQL skills including complex joins and window functions for feature pipelines. Deployed models at scale serving over 1M requests/day on AWS.",
+    "jd_text": "Looking for a Data Scientist with 3+ years production ML experience, strong SQL, deep learning (PyTorch), and experience deploying models at scale.",
+    "expect_extracted_skills_include_any": ["pytorch", "sql", "aws", "deep learning"],
+    "expect_fit_score_min": 65,
+    "note": "Resume covers every JD requirement directly -- should score high with mostly 'matched' classifications."
+  }
+]

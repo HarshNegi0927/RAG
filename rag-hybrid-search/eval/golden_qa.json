@@ -1,0 +1,62 @@
+[
+  {"id": "dep-01", "question": "What command do I use to roll back a bad production deploy?", "expected_sources": ["deployment-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "Answer: loopctl rollback --env=prod --service=<name>"},
+  {"id": "dep-02", "question": "Can I ship a normal feature deploy to production on a Saturday?", "expected_sources": ["deployment-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "Freeze window Fri 4pm - Mon 9am except SEV1/SEV2 hotfixes"},
+  {"id": "dep-03", "question": "What percentage of pods get the new version first when a canary deploy starts?", "expected_sources": ["deployment-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "5% for 10 minutes, then 50%, then 100%"},
+  {"id": "dep-04", "question": "Which Okta role do I need to promote a build to production?", "expected_sources": ["deployment-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "deployer role"},
+
+  {"id": "inc-01", "question": "How quickly does a SEV1 incident need to be acknowledged?", "expected_sources": ["incident-response-runbook.md"], "difficulty": "easy", "kind": "identifier", "notes": "within 5 minutes"},
+  {"id": "inc-02", "question": "Does the incident commander need to personally fix the problem?", "expected_sources": ["incident-response-runbook.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "No, IC coordinates; role rotates independently of on-call"},
+  {"id": "inc-03", "question": "How soon after a major incident does a writeup need to be published?", "expected_sources": ["incident-response-runbook.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "postmortem within 5 business days for SEV1/SEV2"},
+  {"id": "inc-04", "question": "What tool manages who's on call?", "expected_sources": ["incident-response-runbook.md"], "difficulty": "easy", "kind": "identifier", "notes": "PagerDuty"},
+  {"id": "inc-05", "question": "Who gets paged if the primary on-call doesn't respond to a SEV1 in time?", "expected_sources": ["incident-response-runbook.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "secondary, then eng manager, then VP of Eng"},
+
+  {"id": "auth-01", "question": "What HTTP header carries the API key on a request?", "expected_sources": ["api-authentication-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "X-Loopstack-Auth"},
+  {"id": "auth-02", "question": "If I rotate my API key, how long does the old one keep working?", "expected_sources": ["api-authentication-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "24 hour grace period"},
+  {"id": "auth-03", "question": "What's the default number of requests per minute allowed per key?", "expected_sources": ["api-authentication-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "100 requests/minute"},
+  {"id": "auth-04", "question": "How can a customer tell if they're accidentally hitting prod with a test key?", "expected_sources": ["api-authentication-guide.md"], "difficulty": "hard", "kind": "paraphrase", "notes": "key prefix lpk_test_ vs lpk_live_, ERR_AUTH_INVALID_ENV"},
+  {"id": "auth-05", "question": "How do I get a new API key if I think the old one leaked?", "expected_sources": ["api-authentication-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "rotate_api_key(), doc never says 'leaked' or 'new key'"},
+
+  {"id": "mig-01", "question": "What environment variable controls the database migration timeout?", "expected_sources": ["database-migration-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "DB_MIGRATION_TIMEOUT_SEC, default 900s in prod"},
+  {"id": "mig-02", "question": "What batch size does the backfill process use on large tables?", "expected_sources": ["database-migration-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "5,000 rows"},
+  {"id": "mig-03", "question": "Who needs to sign off on a schema change to the payments table?", "expected_sources": ["database-migration-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "Data Platform team member, in addition to normal review"},
+  {"id": "mig-04", "question": "Does every migration need a tested rollback path?", "expected_sources": ["database-migration-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "yes, down migration tested in staging, not just written"},
+
+  {"id": "onb-01", "question": "By when should a new hire open their first pull request?", "expected_sources": ["onboarding-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "by day 3"},
+  {"id": "onb-02", "question": "How long does someone need to be at the company before joining on-call?", "expected_sources": ["onboarding-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "6 weeks + shadow 2 full shifts"},
+  {"id": "onb-03", "question": "My local dev environment setup script keeps failing, what's the usual cause?", "expected_sources": ["onboarding-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "Docker not allocated enough memory, 8GB minimum"},
+  {"id": "onb-04", "question": "Who approves a request for production database read access?", "expected_sources": ["onboarding-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "manager + relevant system owner via access-requests workflow"},
+
+  {"id": "arch-01", "question": "Which service is the system of record for financial transactions?", "expected_sources": ["service-architecture-overview.md"], "difficulty": "easy", "kind": "identifier", "notes": "ledger-service"},
+  {"id": "arch-02", "question": "If the email/notification system is down, does a customer's payment still go through?", "expected_sources": ["service-architecture-overview.md"], "difficulty": "hard", "kind": "paraphrase", "notes": "yes, charge succeeds, receipt delivered async once consumer catches up"},
+  {"id": "arch-03", "question": "Do our services share one big database?", "expected_sources": ["service-architecture-overview.md"], "difficulty": "easy", "kind": "paraphrase", "notes": "no, each service owns its own schema"},
+  {"id": "arch-04", "question": "What naming convention do our event streaming topics follow?", "expected_sources": ["service-architecture-overview.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "<service>.<event>.v<N>, e.g. payment.events.v2"},
+
+  {"id": "cr-01", "question": "How many approvals does a pull request touching billing-service need?", "expected_sources": ["code-review-guidelines.md"], "difficulty": "easy", "kind": "identifier", "notes": "2, at least one designated Payments reviewer"},
+  {"id": "cr-02", "question": "What's the recommended maximum size for a pull request?", "expected_sources": ["code-review-guidelines.md"], "difficulty": "easy", "kind": "identifier", "notes": "under 400 lines of diff"},
+  {"id": "cr-03", "question": "Once a PR is approved, who actually clicks merge?", "expected_sources": ["code-review-guidelines.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "the author, not the reviewer"},
+  {"id": "cr-04", "question": "What tool enforces Python code style?", "expected_sources": ["code-review-guidelines.md"], "difficulty": "easy", "kind": "identifier", "notes": "ruff"},
+
+  {"id": "ff-01", "question": "How do I instantly kill a feature flag during an incident?", "expected_sources": ["feature-flag-rollout-policy.md"], "difficulty": "easy", "kind": "identifier", "notes": "POST /internal/flags/kill"},
+  {"id": "ff-02", "question": "What are the standard stages a new flag rolls out through?", "expected_sources": ["feature-flag-rollout-policy.md"], "difficulty": "easy", "kind": "identifier", "notes": "internal -> 1% -> 10% -> 50% -> 100%"},
+  {"id": "ff-03", "question": "At what point should an old feature flag be deleted from the code?", "expected_sources": ["feature-flag-rollout-policy.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "100% for more than 60 days"},
+  {"id": "ff-04", "question": "Can one engineer alone push a payments flag from 10% to 50%?", "expected_sources": ["feature-flag-rollout-policy.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "no, needs a second engineer's sign-off"},
+
+  {"id": "priv-01", "question": "How long do we keep a customer's data after they close their account?", "expected_sources": ["data-retention-privacy-policy.md"], "difficulty": "easy", "kind": "paraphrase", "notes": "90 days, then permanently deleted"},
+  {"id": "priv-02", "question": "How long are our application logs kept?", "expected_sources": ["data-retention-privacy-policy.md"], "difficulty": "easy", "kind": "identifier", "notes": "30 days"},
+  {"id": "priv-03", "question": "If a record was deleted, can we pull it back from a backup?", "expected_sources": ["data-retention-privacy-policy.md"], "difficulty": "hard", "kind": "paraphrase", "notes": "backups aren't queryable outside a full restore, not meant for this"},
+  {"id": "priv-04", "question": "What has to happen before a new analytics vendor can access customer PII?", "expected_sources": ["data-retention-privacy-policy.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "DPA reviewed by Legal, before integration work begins"},
+
+  {"id": "mon-01", "question": "What triggers the HighErrorRate5xx alert?", "expected_sources": ["monitoring-alerting-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "5xx rate > 2% over 5 min, sustained 3 evaluations"},
+  {"id": "mon-02", "question": "What's the default p99 latency target before an alert fires?", "expected_sources": ["monitoring-alerting-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "1000ms unless overridden per service"},
+  {"id": "mon-03", "question": "What's the name of the main shared operational dashboard?", "expected_sources": ["monitoring-alerting-guide.md"], "difficulty": "easy", "kind": "identifier", "notes": "\"Loopstack Golden Signals\""},
+  {"id": "mon-04", "question": "I just got paged, what should I look at first?", "expected_sources": ["monitoring-alerting-guide.md"], "difficulty": "medium", "kind": "paraphrase", "notes": "Golden Signals dashboard, #deploys channel, dependency graph"},
+
+  {"id": "multi-01", "question": "A migration on the ledger table needs a linked payments feature flag pushed past 10% — whose sign-off do I need in total?", "expected_sources": ["database-migration-guide.md", "feature-flag-rollout-policy.md"], "difficulty": "hard", "kind": "multi-hop", "notes": "Data Platform sign-off (migration) + second engineer sign-off (flag)"},
+  {"id": "multi-02", "question": "Production just went down right after a deploy — what are the first two things I should do?", "expected_sources": ["incident-response-runbook.md", "deployment-guide.md"], "difficulty": "hard", "kind": "multi-hop", "notes": "ack + join #incidents (runbook) and consider loopctl rollback (deploy guide)"},
+
+  {"id": "unans-01", "question": "What's the company's total revenue last quarter?", "expected_sources": [], "difficulty": "unanswerable", "kind": "unanswerable", "notes": "not in corpus at all"},
+  {"id": "unans-02", "question": "What programming language is billing-service written in?", "expected_sources": [], "difficulty": "unanswerable", "kind": "unanswerable", "notes": "never specified in any doc"},
+  {"id": "unans-03", "question": "How many engineers are on the payments team right now?", "expected_sources": [], "difficulty": "unanswerable", "kind": "unanswerable", "notes": "not in corpus"},
+  {"id": "unans-04", "question": "What's our office WiFi password?", "expected_sources": [], "difficulty": "unanswerable", "kind": "unanswerable", "notes": "not in corpus, also not the kind of thing that should be in these docs"},
+  {"id": "unans-05", "question": "Which competitor do we lose the most deals to?", "expected_sources": [], "difficulty": "unanswerable", "kind": "unanswerable", "notes": "not in corpus"}
+]

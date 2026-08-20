@@ -1,0 +1,13 @@
+numpy>=1.26
+rank_bm25>=0.2.2
+spacy>=3.8
+python-dotenv>=1.0     # loads .env so you stop pasting API keys into the terminal
+
+# Local dense embedder (default, offline, zero cost):
+# python3 -m spacy download en_core_web_md
+# or: pip install "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl"
+
+# Production embedder / generation (optional, requires API keys):
+openai>=1.40         # needed for EMBEDDING_PROVIDER=openai, AND for GENERATION_PROVIDER=grok
+                      # (xAI's API is OpenAI-SDK-compatible, used via base_url override -- see src/generate.py)
+anthropic>=0.34       # only needed if GENERATION_PROVIDER=anthropic

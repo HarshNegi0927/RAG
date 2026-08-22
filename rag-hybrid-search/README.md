@@ -96,8 +96,12 @@ hallucinating, once generation is wired up).
 | Method | Hit@5 | MRR |
 |---|---|---|
 | Dense only (local embedder) | 68.2% | 0.563 |
-| Sparse only (BM25) | **95.5%** | **0.824** |
-| Hybrid (tuned weight) | 95.5% | 0.774 |
+| Sparse only (BM25, stemmed) | 93.2% | 0.857 |
+| Hybrid (tuned weight) | 93.2% | 0.808 |
+
+(Numbers below in Findings #1-#3 predate stemming, from the 95.5%/0.824
+sparse baseline — see **Finding #4** for what stemming changed and why the
+Hit@5/MRR numbers above differ slightly from those sections.)
 
 ### 1. Found and fixed a real bug: embedding space collapse
 
@@ -164,6 +168,88 @@ producing many chunks well under that cap because sections are short) is
 a real tuning knob, and that chunk size interacts with embedder quality,
 not just document layout. Worth re-testing after switching embedders
 before drawing a final conclusion.
+
+### 4. A real end-to-end failure, root-caused: compound-word tokenization
+
+`scripts/run_full_eval.py` surfaced a genuine miss: asked *"What command
+do I use to roll back a bad production deploy?"*, the model correctly
+said the answer wasn't in its given context — and it was right that it
+wasn't, but wrong that the docs don't have it. They do
+(`loopctl rollback --env=prod --service=<name>`, in deployment-guide.md's
+"Rollbacks" section). **This was not a generation hallucination — the
+grounding worked exactly as designed, honestly reporting insufficient
+context.** It was a genuine retrieval miss: that specific chunk ranked
+**#24 on both sparse and dense individually**, nowhere near the top-5
+passed to the LLM. Also worth naming directly: my Hit@k eval metric only
+checks whether *any* chunk from the right *source file* was retrieved,
+not whether the specific right *section* was — this bug hid behind a
+passing aggregate score because two other deployment-guide.md chunks were
+in the top-5, just not the one with the actual answer.
+
+Root cause, confirmed by direct tokenizer inspection: the query says
+*"roll back"* (two words), the doc says *"rollback"* (one word) — these
+tokenize to `['roll', 'back']` vs `['rollback']`, zero shared tokens, so
+BM25 has no lexical signal to work with at all. Dense retrieval missed it
+too, independently, for a plainer reason: it's just the already-documented
+weak local embedder (68% Hit@5 overall).
+
+**Attempted fix: stemming (Porter stemmer) on the BM25 tokenizer.**
+Legitimate general improvement — reduces morphological variants
+("rotate"/"rotation"/"rotating") to one token — but tested honestly
+against the full golden set rather than assumed to help:
+
+| Method (post-stemming) | Hit@5 | MRR |
+|---|---|---|
+| Sparse (was 95.5% / 0.824) | 93.2% | **0.857** |
+| Hybrid (was 95.5% / 0.774) | 93.2% | 0.808 |
+
+Mixed, not a clean win: MRR improved (results that ARE found rank higher
+on average) but Hit@5 dropped slightly (one more question misses the
+top-5 entirely than before). And it did **not** fix the motivating case —
+the Rollbacks chunk moved from sparse rank #24 to #15, still nowhere near
+top-5. **Stemming only merges morphological variants of the same word; it
+cannot merge two separate words ("roll", "back") into a compound one
+("rollback").** That's a different problem needing a different fix:
+phrase/bigram indexing in BM25, or subword-tokenized embeddings (like
+OpenAI's) where "roll" and "back" would share BPE subword pieces with
+"rollback" regardless of spacing. Kept stemming anyway since the MRR gain
+and general morphological-variant handling are real value, but this repo
+does not claim it fixed the case that motivated investigating it —
+that's exactly the kind of gap worth naming out loud rather than quietly
+dropping.
+
+### 5. Full-pipeline eval surfaced two eval-design lessons, not model failures
+
+Running `scripts/run_full_eval.py` (confidence gate → generation →
+citation verification → correctness judging, in one pass) also caught two
+cases worth naming precisely because they look like failures but are
+really eval-design sharpness issues:
+
+- **`dep-03`** ("what % of pods get the new version first") was marked
+  `PARTIAL` by the correctness judge for not mentioning the later 50%/100%
+  rollout stages — but the question only asked about the *first* stage,
+  and the answer correctly answered exactly that. The judge was grading
+  against the full golden `notes` field, which contains more detail than
+  the question asked for. The generation was fine; the judge prompt is
+  stricter than the question warrants.
+- **`multi-02`** ("first two things to do when prod goes down after a
+  deploy") was marked `WRONG` for not matching the golden answer
+  (ack + join #incidents + rollback) — but the model's actual answer
+  (pull the feature-flag kill switch, then `loopmigrate down`) is a
+  different, individually-defensible response, correctly cited from real
+  doc content. The question has more than one reasonable "first two
+  things"; grading it against one fixed expected answer is too strict for
+  a genuinely open-ended question. Worth fixing in the golden set (either
+  reword the question to be less ambiguous, or grade this one by rubric
+  instead of a single expected answer) rather than in the pipeline.
+
+Also observed: `multi-01`'s citation verification came back `PARTIAL`
+because the answer was a two-bullet markdown list, and the claim-splitter
+(built for prose, sentence-by-sentence) merged both bullets into one
+"claim" attached only to the second citation. A known, named limitation
+of `verify.py`'s current sentence-based splitting, not fixed in this
+session — bullet/list-aware splitting is the natural next fix if citation
+verification needs to handle formatted answers reliably.
 
 ## Design decisions worth defending in an interview
 

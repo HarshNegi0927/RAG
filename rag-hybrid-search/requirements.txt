@@ -14,3 +14,4 @@ python-dotenv>=1.0     # loads .env so you stop pasting API keys into the termin
 openai>=1.40         # needed for EMBEDDING_PROVIDER=openai, AND for GENERATION_PROVIDER=grok
                       # (xAI's API is OpenAI-SDK-compatible, used via base_url override -- see src/generate.py)
 anthropic>=0.34       # only needed if GENERATION_PROVIDER=anthropic
+nltk>=3.9

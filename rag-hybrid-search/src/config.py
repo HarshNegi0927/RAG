@@ -103,7 +103,17 @@ XAI_BASE_URL = "https://api.x.ai/v1"
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 OPENAI_GENERATION_MODEL = "gpt-4o-mini"
 
-# Below what combined-signal confidence does generation refuse to answer
-# and say so instead of guessing (see src/generate.py). Tuned later against
-# eval/golden_qa.json's 5 unanswerable cases once this is live-tested.
-MIN_CONTEXT_RELEVANCE = 0.15
+# --- Confidence gate ---
+# Measured against eval/golden_qa.json (see scripts/tune_confidence_threshold.py):
+# the RRF-fused hybrid score does NOT separate answerable from unanswerable
+# questions at all (both ranged ~0.011-0.016, pure overlap -- RRF is a rank
+# signal, not a relevance signal). Raw top-1 BM25 score (pre-fusion) does
+# separate them, imperfectly: threshold=8.0 catches all 5 unanswerable
+# golden questions at the cost of wrongly flagging 2/44 real ones
+# ("How long are application logs kept?" scored 6.08, "If a record was
+# deleted, can we pull it back?" scored 7.84 -- both legitimately in-corpus
+# but phrased in a way that doesn't share much vocabulary with their answer).
+# That's the actual tradeoff at this setting, not a guess -- raise it and
+# you block more unanswerable questions at the cost of more false blocks;
+# lower it and the reverse.
+CONFIDENCE_SPARSE_THRESHOLD = 8.0

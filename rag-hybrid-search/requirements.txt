@@ -1,6 +1,9 @@
 numpy>=1.26
 rank_bm25>=0.2.2
 spacy>=3.8
+click>=8.2.1          # pinned explicitly -- pip's resolver has been seen to silently
+                      # skip this transitive dependency of spacy on some Python versions
+                      # (observed: Python 3.14), which breaks `spacy download`
 python-dotenv>=1.0     # loads .env so you stop pasting API keys into the terminal
 
 # Local dense embedder (default, offline, zero cost):

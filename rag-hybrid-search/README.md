@@ -197,13 +197,44 @@ before drawing a final conclusion.
   defense. Neither `api.groq.com` nor `api.x.ai` is reachable from the
   build sandbox itself (both confirmed `host_not_allowed`), so this was
   live-verified on a real Windows machine, not in-sandbox.
-- **Citation verification** — does each `[1]`/`[2]` actually support the
-  claim it's attached to, beyond just resolving to a real context block.
-  `parse_citations()` already gives you the chunk each marker resolves to.
-- **Confidence scoring** — the model declined the unanswerable test
-  question correctly via prompting alone; a proper confidence threshold
-  (rather than relying on the model to self-police every time) is still
-  unbuilt.
+- **Citation verification** (`src/verify.py`) — **built**, not yet
+  live-tested (same network limitation as generation). Splits an answer
+  into per-sentence claims, resolves each claim's citation(s) to their
+  actual chunk text, and asks an LLM judge whether the cited passage(s)
+  genuinely support the claim (`SUPPORTED` / `PARTIAL` / `UNSUPPORTED`),
+  rather than only checking that a citation number resolves to *some*
+  real chunk. Claim-splitting was tested against the real answers from
+  the live generation run above — including the interesting 5-citation
+  case (`[1][2][3][4][5]`, all cited to support one "the docs don't
+  mention this" claim), which split and resolved correctly. One bug found
+  and fixed in that testing: the sentence-splitter initially missed every
+  citation immediately followed by a period (`...incident[1].` — the
+  common case) because it only matched citations at the exact end of a
+  sentence with nothing after them. Run
+  `scripts/test_verification.py` to see real verdicts against your live
+  Groq output.
+- **Confidence scoring** (`src/confidence.py`) — **built and measured**
+  against the full golden set. Key finding: the hybrid RRF score is
+  useless for this (answerable vs. unanswerable score distributions fully
+  overlapped, 0.011–0.016 both). Raw top-1 BM25 score, taken *before*
+  fusion, does separate them — at threshold 8.0, it catches **5/5**
+  unanswerable golden questions, at the cost of wrongly flagging **2/44**
+  genuinely answerable ones (`priv-02`, `priv-03` — both phrased in a way
+  that shares little vocabulary with their own answer). That's a real,
+  measured tradeoff, not an assumed one — see
+  `scripts/tune_confidence_threshold.py`. The gate is a separate,
+  composable pre-check (`confidence.py`, not baked into `generate.py`) so
+  it can skip the LLM call entirely for low-confidence questions —
+  confirmed working with `GROQ_API_KEY` unset entirely (see
+  `scripts/test_confidence_gate.py`), which is a real cost saving, not
+  just a nicer-sounding refusal.
+- **`scripts/run_full_eval.py`** — the other eval scripts each measure one
+  layer (retrieval quality, chunking strategy, RRF weight) in isolation;
+  this one runs the *whole* stack — confidence gate → generation →
+  citation verification → answer-correctness judging against the golden
+  set's notes — on a stratified 14-question sample (2 easy, 2 medium, all
+  5 hard/multi-hop, all 5 unanswerable) and produces one consolidated
+  report. Needs `GROQ_API_KEY`; not run yet in this session.
 - **Cross-encoder reranker** on top of the fused top-20.
 - **FastAPI service + dashboard + Docker packaging.**
 

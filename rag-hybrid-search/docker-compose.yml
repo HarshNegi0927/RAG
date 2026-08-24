@@ -1,0 +1,11 @@
+# .env stays OUTSIDE the image (see .dockerignore) -- env_file mounts it
+# at container runtime only, so GROQ_API_KEY never ends up baked into a
+# layer that could be pushed to a registry or extracted from the image.
+services:
+  rag-api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped

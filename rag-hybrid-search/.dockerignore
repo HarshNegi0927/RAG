@@ -1,0 +1,11 @@
+.env
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+index_store/
+scripts/
+RUNME.sh
+RUNME.ps1
+README.md

@@ -79,7 +79,7 @@ def main():
 
     for item in sample:
         q, is_answerable = item["question"], bool(item["expected_sources"])
-        answer, assessment = answer_with_gate(retriever, q)
+        answer, assessment, retrieved = answer_with_gate(retriever, q)
         was_gated = answer.provider == "confidence_gate"
 
         gate_was_right = (was_gated and not is_answerable) or (not was_gated and is_answerable)
@@ -98,7 +98,7 @@ def main():
 
         print(f"  answer: {answer.answer_text}")
 
-        citations = verify_citations(answer.answer_text, retriever.hybrid(q, top_k=5))
+        citations = verify_citations(answer.answer_text, retrieved)
         all_citation_results.extend(citations)
         for c in citations:
             print(f"  citation [{c.verdict}]: {c.claim_text[:60]}...")

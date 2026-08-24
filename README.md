@@ -269,6 +269,79 @@ verification needs to handle formatted answers reliably.
   trustworthy signal on *both* sides to earn its keep — it's not free
   insurance against a weak embedder.
 
+## API server
+
+`src/api.py` — FastAPI service wrapping the whole pipeline. **Live-tested
+in this sandbox** (self-contained, no external network needed except the
+LLM call itself):
+
+```bash
+export PYTHONPATH=src
+uvicorn api:app --app-dir src --reload --port 8000
+```
+
+Cold start is ~15-20s (the index is built once at startup, not per
+request — loading the spacy model + embedding the corpus is the slow
+part). Confirmed working:
+
+| Endpoint | Tested | Notes |
+|---|---|---|
+| `GET /health` | ✅ | |
+| `GET /v1/documents` | ✅ | lists all 10 docs + chunk counts |
+| `GET /v1/stats` | ✅ | |
+| `POST /v1/ask` (low-confidence question) | ✅ | gates correctly, zero API key needed |
+| `POST /v1/ask` (confident question, no key set) | ✅ | fails clean — `502` with a real error message, not a crash |
+| `POST /v1/ask` (empty question) | ✅ | Pydantic validation → clean `422` |
+| `POST /v1/ask` (confident question, real key) | not tested here | same network limitation as generate.py — test on your machine |
+
+Body: `{"question": "...", "top_k": 5, "verify": false}` — set
+`"verify": true` to also run citation verification inline (costs extra
+LLM calls, one per cited claim, so it's opt-in rather than default).
+
+## Docker
+
+`Dockerfile` + `docker-compose.yml` — **not live-tested** (no `docker` CLI
+in this build sandbox), written against the FastAPI app that IS tested
+above, so the only untested part is the containerization layer itself,
+not the application logic inside it. `.env` is deliberately excluded from
+the image (`.dockerignore`) and mounted at runtime via `env_file` instead,
+so `GROQ_API_KEY` never ends up baked into a layer.
+
+```bash
+docker compose up --build
+curl http://localhost:8000/health
+```
+
+## Dashboard
+
+`dashboard.py` — the actual demo-able UI (Streamlit). One command, no
+separate backend to run:
+
+```bash
+export PYTHONPATH=src   # Windows: $env:PYTHONPATH = "src"
+streamlit run dashboard.py
+```
+
+Example-question buttons, a live confidence badge (gated vs. confident,
+with the actual score), the answer, resolved citations, an expandable
+"raw retrieved context" panel showing exactly what was handed to the LLM,
+and optional citation verification / reranking toggles in the sidebar.
+**Live-tested via Streamlit's own `AppTest` framework** (not just eyeballed
+in a browser): full script execution with zero exceptions, and a real
+button-click interaction test on the confidence-gate path end to end
+(click the "revenue" example → text box populates → gate fires → warning
+banner and decline message render correctly) — all without needing an
+API key, same as the gate itself. One real bug this testing caught and
+fixed: the first version set the text input's `value=` after clicking an
+example button, which Streamlit silently ignores once a widget's `key`
+already has session state — fixed by setting `st.session_state` directly
+*before* the widget is created, which is the pattern Streamlit actually
+honors.
+
+`src/api.py` remains the separate artifact for showing a production-style
+API rather than a demo UI — both exist because they demonstrate different
+things.
+
 ## What's not done yet
 
 - **Generation + citations** (`src/generate.py`) — **built and live-tested**,
@@ -321,8 +394,45 @@ verification needs to handle formatted answers reliably.
   set's notes — on a stratified 14-question sample (2 easy, 2 medium, all
   5 hard/multi-hop, all 5 unanswerable) and produces one consolidated
   report. Needs `GROQ_API_KEY`; not run yet in this session.
-- **Cross-encoder reranker** on top of the fused top-20.
-- **FastAPI service + dashboard + Docker packaging.**
+- **`src/rerank.py`** — **built**, not yet live-tested (needs a real LLM
+  call, same limitation as generation/verification). Corrects something
+  this README said earlier: an initial version of this doc justified
+  skipping the reranker because it wouldn't have fixed the one specific
+  failure investigated in depth (Finding #4, dep-01) — true, but too
+  narrow a justification, since that was a **recall** problem (the right
+  chunk never made the candidate pool) and reranking targets a different,
+  separate problem: **precision** among chunks that already were
+  retrieved. Hybrid retrieval's own MRR (0.808, well short of 1.0 even
+  where Hit@5 succeeds) is direct evidence that precision-among-retrieved
+  has real room to improve. Real cross-encoder models need a HuggingFace
+  Hub download this sandbox can't reach, so this uses LLM-as-judge
+  scoring instead (explicitly sanctioned as a valid choice by the
+  original project spec) — one LLM call scores all ~20 pooled candidates
+  at once against the query, JSON-in/JSON-out. `scripts/measure_reranker_impact.py`
+  does a real before/after MRR comparison on the hard/multi-hop questions
+  rather than assuming it helps — run it yourself to get real numbers.
+  What's tested here without network: JSON-response parsing (including
+  the very common case of a model wrapping it in a markdown code fence
+  despite being told not to, and defensive handling of out-of-range
+  indices / non-numeric scores), and the sort logic itself, confirmed
+  against a scripted fake generator that deterministically prefers one
+  candidate. Building the dashboard surfaced a real correctness bug this
+  introduced: `confidence.answer_with_gate()` originally returned only
+  `(answer, assessment)`, so anything wanting to verify citations had to
+  re-call `retriever.hybrid()` independently -- fine when `use_reranker`
+  was off, silently wrong when it was on, since a fresh `hybrid()` call
+  doesn't reproduce the reranked order (or necessarily the same members)
+  generation actually saw, breaking citation-marker-to-chunk resolution
+  during verification. Fixed by having `answer_with_gate()` return the
+  exact retrieved-chunk list it used as a third element, and updating
+  every caller (`api.py`, `run_full_eval.py`, `dashboard.py`) to use that
+  instead of recomputing.
+- Bullet/list-aware citation splitting in `verify.py` (see Finding #5).
+- Persisting the index and loading it at API startup instead of
+  rebuilding from scratch every time (`build_index.py` already has a
+  `persist()` function; `api.py`'s lifespan doesn't call it yet — 15-20s
+  startup is fine for a demo, less fine for a real restart-heavy
+  deployment).
 
 ## A note on cross-platform reproducibility
 

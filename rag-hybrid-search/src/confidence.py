@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from config import CONFIDENCE_SPARSE_THRESHOLD, HYBRID_TOP_K
+from config import CONFIDENCE_SPARSE_THRESHOLD, HYBRID_TOP_K, RERANK_POOL_SIZE
 from retrieval import HybridRetriever
 
 
@@ -49,11 +49,24 @@ DECLINE_TEMPLATE = (
 )
 
 
-def answer_with_gate(retriever: HybridRetriever, query: str, top_k: int = HYBRID_TOP_K, generator=None):
-    """Composes the confidence gate with generation: skip the LLM call
-    entirely (real cost savings, not just a nicer refusal) when retrieval
-    confidence is low, otherwise generate normally. Returns
-    (GroundedAnswer, ConfidenceAssessment) so callers can see why."""
+def answer_with_gate(
+    retriever: HybridRetriever, query: str, top_k: int = HYBRID_TOP_K, generator=None, use_reranker: bool = False
+):
+    """Composes the confidence gate with retrieval + (optional) reranking
+    + generation: skip the LLM call entirely (real cost savings, not just
+    a nicer refusal) when retrieval confidence is low, otherwise generate
+    normally. Returns (GroundedAnswer, ConfidenceAssessment, retrieved_chunks)
+    -- the third element is exactly the chunk list generation actually saw,
+    so callers that also want to run citation verification use THIS list,
+    not a fresh retriever.hybrid() call. That distinction matters when
+    use_reranker=True: re-querying hybrid() directly would give a
+    different order (and possibly different members) than what generation
+    was actually shown, silently breaking citation-marker-to-chunk
+    resolution during verification.
+
+    use_reranker=True retrieves a wider candidate pool (RERANK_POOL_SIZE)
+    and uses rerank.rerank() to pick the final top_k from it, instead of
+    taking hybrid fusion's top_k directly -- costs one extra LLM call."""
     from generate import GroundedAnswer, answer_question  # local import: avoids a hard dependency
 
     assessment = assess_confidence(retriever, query)
@@ -67,7 +80,14 @@ def answer_with_gate(retriever: HybridRetriever, query: str, top_k: int = HYBRID
             provider="confidence_gate",
             model="none (LLM call skipped)",
         )
-        return declined, assessment
+        return declined, assessment, []
 
-    retrieved = retriever.hybrid(query, top_k=top_k)
-    return answer_question(query, retrieved, generator=generator), assessment
+    if use_reranker:
+        from rerank import rerank
+
+        pool = retriever.hybrid(query, top_k=RERANK_POOL_SIZE)
+        retrieved = rerank(query, pool, keep_top_k=top_k, generator=generator)
+    else:
+        retrieved = retriever.hybrid(query, top_k=top_k)
+
+    return answer_question(query, retrieved, generator=generator), assessment, retrieved

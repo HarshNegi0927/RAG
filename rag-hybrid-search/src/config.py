@@ -117,3 +117,7 @@ OPENAI_GENERATION_MODEL = "gpt-4o-mini"
 # you block more unanswerable questions at the cost of more false blocks;
 # lower it and the reverse.
 CONFIDENCE_SPARSE_THRESHOLD = 8.0
+
+# How many hybrid candidates to pull before reranking (original project
+# spec calls for "top 20"). Only used when use_reranker=True.
+RERANK_POOL_SIZE = 20

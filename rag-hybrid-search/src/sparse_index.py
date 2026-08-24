@@ -49,4 +49,3 @@ class SparseIndex:
         scores = self._bm25.get_scores(tokenize(query))
         ranked = sorted(zip(self.chunk_ids, scores), key=lambda x: x[1], reverse=True)
         return [(cid, float(score)) for cid, score in ranked[:top_k] if score > 0]
-    

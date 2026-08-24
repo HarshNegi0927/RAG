@@ -27,7 +27,7 @@ def main():
     retriever, chunks = build_retriever()
 
     for q in TEST_QUESTIONS:
-        answer, assessment = answer_with_gate(retriever, q)
+        answer, assessment, _retrieved = answer_with_gate(retriever, q)
         print("=" * 90)
         print(f"Q: {q}")
         print(f"Confidence: top BM25={assessment.top_sparse_score:.2f}, threshold={assessment.threshold:.2f}, "
